@@ -1,0 +1,7 @@
+# Renders, exported segments and test stills: made by the page and the server, and the
+# finished films are far over GitHub's 100 MB a file. They stay on the machine that made them.
+out/
+out.zip
+
+.DS_Store
+node_modules/

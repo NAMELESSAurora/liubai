@@ -1,0 +1,6 @@
+### R2w
+a colossal broken stone arch, the left pillar whole, most of the arch ring still standing, the right pillar snapped short, cool grey stone with pale blue shadows, flat 2D watercolor illustration on paper, like an architectural elevation drawing painted in watercolor, completely flat front-on view, orthographic, no perspective, no depth, no side faces, flat geometric shapes with crisp edges, hairline ink linework, soft wet-on-wet washes and pigment granulation, muted limited palette, minimalist, no cast shadow, isolated on a pure white background --ar 1:1 --raw --no text, signature, frame, border, people, ground, sky, photorealistic, 3d render, CGI, perspective, vanishing point, heavy outlines
+
+### R1w
+a long ruined aqueduct of tall round arches, one stretch collapsed, pale cool grey stone, flat 2D watercolor illustration on paper, like an architectural elevation drawing painted in watercolor, completely flat front-on view, orthographic, no perspective, no depth, no side faces, flat geometric shapes with crisp edges, hairline ink linework, soft wet-on-wet washes and pigment granulation, muted limited palette, minimalist, no cast shadow, isolated on a pure white background --ar 3:1 --raw --no text, signature, frame, border, people, ground, sky, photorealistic, 3d render, CGI, perspective, vanishing point, heavy outlines
+

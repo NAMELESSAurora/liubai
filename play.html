@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>留白 · 走进去</title>
+<style>
+  :root { color-scheme: light; --paper: #f4efe6; --ink: #4a4744; --dim: #8d8780; --line: #cfc8bc; --accent: #c8553a; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { background: var(--paper); color: var(--ink); font: 14px/1.6 -apple-system, "PingFang SC", system-ui, sans-serif; }
+  .stage { position: fixed; inset: 0; display: grid; place-items: center; }
+  canvas { display: block; width: min(100vw, 177.78vh); height: min(100vh, 56.25vw); background: var(--paper); cursor: crosshair; }
+  .ink { color: rgba(74, 71, 68, 0.78); text-shadow: 0 0 6px rgba(244, 239, 230, 0.95), 0 0 2px rgba(244, 239, 230, 0.9); }
+  #hud { position: fixed; left: 16px; top: 12px; font-size: 12px; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; pointer-events: none; }
+  /* The keys: shown for a while when we begin, then only when asked for (H). */
+  #keys { position: fixed; left: 16px; right: 16px; top: 12px; font-size: 12px; line-height: 1.9; pointer-events: none; opacity: 0; transition: opacity 1.2s ease; text-align: right; }
+  #keys b { font-weight: 600; color: rgba(60, 58, 56, 0.92); }
+  #keys.show { opacity: 1; }
+  #keys.hint { animation: hint 24s ease forwards; }
+  @keyframes hint { 0% { opacity: 0; } 6% { opacity: 1; } 86% { opacity: 1; } 100% { opacity: 0; } }
+  /* A few words in the middle, for a moment. */
+  #place { position: fixed; left: 0; right: 0; top: 16%; text-align: center; pointer-events: none; opacity: 0; transition: opacity 1.4s ease;
+    font: 300 26px/1.3 "Songti SC", "Noto Serif SC", serif; letter-spacing: 0.5em; text-indent: 0.5em; color: rgba(60, 58, 56, 0.86); text-shadow: 0 0 14px rgba(244, 239, 230, 0.95), 0 0 4px rgba(244, 239, 230, 0.9); }
+  #place.on { opacity: 1; }
+  /* The player: a quiet strip at the foot of the page, that comes forward when the pointer is on it. */
+  #player { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(720px, calc(100vw - 32px)); display: grid; grid-template-columns: auto auto auto minmax(90px, 1.1fr) minmax(80px, 1.5fr) auto auto 64px auto auto; align-items: center; gap: 8px;
+    padding: 7px 14px; border-radius: 999px; background: rgba(244, 239, 230, 0.6); border: 1px solid rgba(207, 200, 188, 0.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0.55; transition: opacity 0.4s ease; font-size: 12px; }
+  #player:hover, #player:focus-within, #player.open { opacity: 1; }
+  #player button { font: inherit; color: var(--ink); background: transparent; border: 0; padding: 3px 6px; border-radius: 6px; cursor: pointer; min-width: 26px; }
+  #player button:hover { background: rgba(74, 71, 68, 0.1); }
+  #player button:focus-visible, #player input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #tname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #3c3a38; }
+  #ttime { font-variant-numeric: tabular-nums; color: var(--dim); white-space: nowrap; }
+  #player input[type="range"] { width: 100%; margin: 0; accent-color: #6b6660; height: 14px; }
+  #tracks { display: none; position: absolute; left: 14px; right: 14px; bottom: calc(100% + 8px); max-height: 46vh; overflow: auto; padding: 8px; border-radius: 14px; background: rgba(244, 239, 230, 0.94); border: 1px solid rgba(207, 200, 188, 0.9); }
+  #player.open #tracks { display: grid; gap: 2px; }
+  #tracks button { text-align: left; padding: 6px 10px; }
+  #tracks button.on { background: rgba(74, 71, 68, 0.12); font-weight: 600; }
+  #tracks .tip { padding: 6px 10px; color: var(--dim); }
+  /* With the camera out, everything but the picture stands aside; one line says what the camera can do. */
+  #photo { position: fixed; left: 0; right: 0; bottom: 16px; text-align: center; font-size: 12px; line-height: 1.9; pointer-events: none; display: none; }
+  #photo b { font-weight: 600; color: rgba(60, 58, 56, 0.92); }
+  body.photo #photo { display: block; }
+  body.photo #photo.off { display: none; }
+  body.photo #player, body.photo #hud, body.photo #keys { display: none !important; }
+  body.photo canvas { cursor: cell; }
+  #veil { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(244, 239, 230, 0.8); transition: opacity 0.9s ease; }
+  #veil.gone { opacity: 0; pointer-events: none; }
+  .card { width: min(560px, 88vw); text-align: center; }
+  h1 { margin: 0; font: 300 44px/1.2 "Songti SC", "Noto Serif SC", serif; letter-spacing: 0.3em; text-indent: 0.3em; color: #3c3a38; }
+  .en { margin: 6px 0 22px; font: 400 12px/1 "Cormorant Garamond", Georgia, serif; letter-spacing: 0.5em; text-indent: 0.5em; color: var(--dim); }
+  .card p { margin: 0 0 8px; color: var(--ink); }
+  .card ul { list-style: none; margin: 16px 0 22px; padding: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 16px; text-align: left; font-size: 13px; }
+  .card li { display: contents; }
+  .card li b { font-weight: 600; white-space: nowrap; text-align: right; color: #3c3a38; }
+  .card li span { color: var(--ink); }
+  .go { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; opacity: 0.35; pointer-events: none; transition: opacity 0.4s; }
+  #veil.ready .go { opacity: 1; pointer-events: auto; }
+  .go button { font: inherit; padding: 9px 20px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line); background: rgba(244, 239, 230, 0.7); color: var(--ink); }
+  .go button small { display: block; font-size: 11px; color: var(--dim); }
+  .go button.main { background: #3c3a38; border-color: #3c3a38; color: var(--paper); }
+  .go button.main small { color: rgba(244, 239, 230, 0.7); }
+  .go button:hover { border-color: var(--ink); }
+  .go button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #note { margin-top: 12px; min-height: 1.6em; font-size: 12px; color: var(--dim); }
+</style>
+</head>
+<body>
+  <div class="stage"><canvas id="view" width="1600" height="900"></canvas></div>
+  <div id="hud" class="ink" style="display: none"></div>
+  <div id="keys" class="ink"><b>W A S D</b> 走 / 飞　<b>空格</b> 跳；按住或空中再按：起飞、上升　<b>Q</b> 下降、落地　<b>Shift</b> 跑 / 加速　<b>C</b> 巡航　<b>拖动鼠标 / 方向键</b> 环顾<br><b>Z / X</b> 上一处 / 下一处风景　<b>T</b> 全程导览　<b>U</b> 就地游览（漫步、泛舟、盘旋、滑翔）　<b>P</b> 拍照<br><b>N</b> 入夜 / 天亮　<b>Y</b> 昼夜流转　<b>K</b> 天气：晴 · 薄雾 · 雨 · 雪　<b>O</b> 光点同行　<b>I</b> 随音乐呼吸<br><b>回车</b> 播放 / 暂停　<b>, .</b> 上一首 / 下一首　<b>- =</b> 音量　<b>[ ]</b> 环境声　<b>M</b> 静音　<b>J</b> 旅程　<b>G</b> 影片　<b>R</b> 重来　<b>H</b> 这些字</div>
+  <div id="place"></div>
+  <div id="photo" class="ink"><b>拍照</b>　世界已停住　<b>W A S D / 空格 / Q</b> 移动相机　<b>拖动</b> 取景　<b>滚轮</b> 变焦　<b>[ ]</b> 倾斜　<b>F</b> 浅景深，<b>点画面</b> 对焦，<b>- =</b> 虚化<br><b>回车</b> 以成片画质存图（2560×1440）　<b>0</b> 复位　<b>H</b> 隐去这行字　<b>P</b> 返回</div>
+  <div id="player">
+    <button id="prev" type="button" title="上一首（,）" aria-label="上一首">◀◀</button>
+    <button id="pp" type="button" title="播放 / 暂停（回车）" aria-label="播放或暂停">▶</button>
+    <button id="next" type="button" title="下一首（.）" aria-label="下一首">▶▶</button>
+    <span id="tname">没有音乐</span>
+    <input id="seek" type="range" min="0" max="1000" value="0" aria-label="进度">
+    <span id="ttime">0:00 / 0:00</span>
+    <button id="order" type="button" title="播放顺序">顺序</button>
+    <input id="vol" type="range" min="0" max="100" value="85" aria-label="音量" title="音量（- =）">
+    <button id="add" type="button" title="添加音乐文件（也可以把文件拖到页面上）">＋</button>
+    <button id="listbtn" type="button" title="曲目" aria-label="曲目">≡</button>
+    <input id="files" type="file" accept="audio/*,.wav,.mp3,.m4a,.flac,.ogg" multiple hidden>
+    <div id="tracks"></div>
+  </div>
+  <div id="veil">
+    <div class="card">
+      <h1>留白</h1>
+      <div class="en">UNPAINTED</div>
+      <p>一处可以散步、可以飞的风景，和正在放的音乐。</p>
+      <ul>
+        <li><b>W A S D</b><span>走，Shift 跑；<b>空格</b> 跳，按住不放（或在空中再按一次）就起飞</span></li>
+        <li><b>飞行</b><span>视线朝哪就往哪：W 积攒速度，俯冲更快、爬升变慢，松手会滑行到悬停；空格 / Q 升降，C 巡航；贴近地面按 Q 落地</span></li>
+        <li><b>环顾</b><span>按住鼠标拖动，或用方向键；双击画面可锁定指针（Esc 释放）</span></li>
+        <li><b>去处</b><span><b>Z / X</b> 上一处 / 下一处风景；<b>T</b> 沿影片的路线被带着走一圈；<b>U</b> 就地游览：廊下漫步、湖上泛舟、林间小径、云海盘旋、山野滑翔</span></li>
+        <li><b>天光</b><span><b>N</b> 入夜 / 天亮（光点会升起，成为月亮），<b>Y</b> 昼夜自己流转；<b>K</b> 天气：晴、薄雾、雨、雪</span></li>
+        <li><b>拍照</b><span><b>P</b> 停住世界，取景、变焦、对焦，<b>回车</b> 以成片画质存图</span></li>
+        <li><b>声音</b><span>底部的播放条：回车 播放 / 暂停，<b>, .</b> 换曲；把音乐文件拖到页面上，或放进 <code>liubai/music/</code>；<b>[ ]</b> 调环境声</span></li>
+      </ul>
+      <div class="go">
+        <button id="wander" class="main" type="button">漫游<small>随处走、随处飞</small></button>
+        <button id="tour" type="button">导览<small>被带着看一圈</small></button>
+        <button id="journey" type="button">旅程<small>从白纸开始，跟着光点</small></button>
+        <button id="auto" type="button">影片<small>原片，实时播放</small></button>
+      </div>
+      <div id="note"></div>
+    </div>
+  </div>
+  <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js" } }</script>
+  <script type="module" src="src/play.js"></script>
+</body>
+</html>
